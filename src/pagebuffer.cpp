@@ -96,19 +96,19 @@ void PageBufferManager::allocatePage(File* file, PageId &pageNumber, Page*& page
 {
 	//BEGINNING of your solution -- do not remove this comment
 
-	// std::cout << "invoke into allocatePage()" << std::endl;
+	std::cout << "invoke into allocatePage()" << std::endl;
 	// create a page
 	Page allocatePage = file->allocatePage();
 	page = &allocatePage;
 	PageId allocatePageId = page->page_number();
 	pageNumber = allocatePageId;
-	// std::cout << "allocating a page, number is: " << pageNumber << std::endl;
+	std::cout << "allocating a page, number is: " << pageNumber << std::endl;
 
 	// find a frame in buffer pool
 	// call allocateBuffer to find a frame using clock algorithm
 	FrameId pageFrame;
 	PageBufferManager::allocateBuffer(pageFrame);
-	// std::cout << "call allocateBuffer to find a frame using clock algorithm, frame Id is: " << pageFrame << std:: endl;
+	std::cout << "call allocateBuffer to find a frame using clock algorithm, frame Id is: " << pageFrame << std:: endl;
 
 	// check if the dirty bit is set
 	if (PageBufferManager::bufferStatTable[pageFrame].dirty)
@@ -133,7 +133,7 @@ void PageBufferManager::allocatePage(File* file, PageId &pageNumber, Page*& page
 	// store the page acoording to the page frame
 	PageBufferManager::pageBufferPool[pageFrame] = *page;
 
-	// std::cout << "return from allocatePage()" << std::endl;
+	std::cout << "return from allocatePage()" << std::endl;
 
 	//END of your solution -- do not remove this comment
 }

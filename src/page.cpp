@@ -4,8 +4,8 @@
  * @section LICENSE
  * Copyright (c) 2012 Database Group, Computer Sciences Department, University of Wisconsin-Madison.
  */
-#include <iostream>
-#include <stdlib.h>
+// #include <iostream>
+// #include <stdlib.h>
 #include <cassert>
 
 #include "exceptions/insufficient_space_exception.h"
@@ -32,7 +32,7 @@ void Page::initialize() {
 }
 
 RecordId Page::insertRecord(const std::string& record_data) {
-  // std::cout << "insertRecord" << std::endl;
+  // std::cout << "number slot right now: " << header_.num_slots << std::endl;
   if (!hasSpaceForRecord(record_data)) {
     throw InsufficientSpaceException(
         page_number(), record_data.length(), getFreeSpace());
@@ -132,7 +132,7 @@ bool Page::hasSpaceForRecord(const std::string& record_data) const {
   if (header_.num_free_slots == 0) {
     record_size += sizeof(PageSlot);
   }
-  std::cout << "free space: " << getFreeSpace() << std::endl;
+  // std::cout << "free space: " << getFreeSpace() << std::endl;
   // std::cout << "record length: " << record_size << std::endl;
   return record_size <= getFreeSpace();
 }

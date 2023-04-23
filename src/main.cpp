@@ -96,8 +96,8 @@ int main()
 
   // Delete the file since we're done with it.
   File::remove(filename);
-	//This function tests buffer manager, comment this line if you don't wish to test buffer manager
-	testBufMgr();
+  //This function tests buffer manager, comment this line if you don't wish to test buffer manager
+  testBufMgr();
 }
 
 void testBufMgr()
