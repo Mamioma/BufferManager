@@ -96,7 +96,6 @@ int main()
 
   // Delete the file since we're done with it.
   File::remove(filename);
-
 	//This function tests buffer manager, comment this line if you don't wish to test buffer manager
 	testBufMgr();
 }
@@ -141,11 +140,11 @@ void testBufMgr()
 	//Comment tests which you do not wish to run now. Tests are dependent on their preceding tests. So, they have to be run in the following order. 
 	//Commenting  a particular test requires commenting all tests that follow it else those tests would fail.
 	test1();
-	test2();
-	test3();
-	test4();
-	test5();
-	test6();
+	// test2();
+	// test3();
+	// test4();
+	// test5();
+	// test6();
 
 	//Close files before deleting them
 	file1.~File();
@@ -169,10 +168,14 @@ void testBufMgr()
 void test1()
 {
 	//Allocating pages in a file...
+	// std::cout << "first test" << std::endl; 
 	for (i = 0; i < num; i++)
 	{
+		std::cout << i << std::endl;
 		bufMgr->allocatePage(file1ptr, pid[i], page);
 		sprintf((char*)tmpbuf, "test.1 Page %d %7.1f", pid[i], (float)pid[i]);
+		// std::cout << tmpbuf << std::endl;
+		// std::cout << "size of page: " << sizeof(page) << std::endl;
 		rid[i] = page->insertRecord(tmpbuf);
 		bufMgr->unPinPage(file1ptr, pid[i], true);
 	}

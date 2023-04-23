@@ -4,7 +4,8 @@
  * @section LICENSE
  * Copyright (c) 2012 Database Group, Computer Sciences Department, University of Wisconsin-Madison.
  */
-
+#include <iostream>
+#include <stdlib.h>
 #include <cassert>
 
 #include "exceptions/insufficient_space_exception.h"
@@ -31,12 +32,16 @@ void Page::initialize() {
 }
 
 RecordId Page::insertRecord(const std::string& record_data) {
+  // std::cout << "insertRecord" << std::endl;
   if (!hasSpaceForRecord(record_data)) {
     throw InsufficientSpaceException(
         page_number(), record_data.length(), getFreeSpace());
   }
+  // std::cout << "why" << std::endl;
   const SlotId slot_number = getAvailableSlot();
+  // std::cout << "slot_number: " << slot_number << std::endl;
   insertRecordInSlot(slot_number, record_data);
+  // std::cout << "true" << std::endl;
   return {page_number(), slot_number};
 }
 
@@ -127,6 +132,8 @@ bool Page::hasSpaceForRecord(const std::string& record_data) const {
   if (header_.num_free_slots == 0) {
     record_size += sizeof(PageSlot);
   }
+  std::cout << "free space: " << getFreeSpace() << std::endl;
+  // std::cout << "record length: " << record_size << std::endl;
   return record_size <= getFreeSpace();
 }
 
@@ -180,6 +187,8 @@ void Page::insertRecordInSlot(const SlotId slot_number,
   slot->item_offset = header_.free_space_upper_bound - record_length;
   header_.free_space_upper_bound = slot->item_offset;
   --header_.num_free_slots;
+  // std::cout << "okay in here" << std::endl;
+  // std::cout << "slot->item_offset " << slot->item_offset << " slot->item length " << slot->item_length << "slot record " << record_data << std::endl;
   data_.replace(slot->item_offset, slot->item_length, record_data);
 }
 
