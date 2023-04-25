@@ -56,6 +56,7 @@ void PageBufferManager::readPage(File* file, const PageId pageNumber, Page*& pag
 {
 	//BEGINNING of your solution -- do not remove this comment
 
+	// std::cout << "invoke into readPage" << std::endl;
 	// First check whether the page is already in the buffer pool by invoking the lookup() method
 	FrameId lookupID;
 	try
@@ -64,20 +65,45 @@ void PageBufferManager::readPage(File* file, const PageId pageNumber, Page*& pag
 	}
 	catch(const HashNotFoundException& e)
 	{
+		// std::cout << "HashNotFoundException" << std::endl;
+
 		// Page is not in the buffer pool
 		// Call allocateBuffer() to allocate a buffer frame
 		PageBufferManager::allocateBuffer(lookupID);
+		// std::cout << "the new frame id is: " << lookupID << std::endl;
+
+		// if the allocated frame is dirty, flush it
+		if (PageBufferManager::bufferStatTable[lookupID].dirty) 
+		{
+			// std::cout << "dirty bit is set, flush to disk, file name: " << PageBufferManager::bufferStatTable[lookupID].file->filename() << std::endl;
+			PageBufferManager::flushFile(PageBufferManager::bufferStatTable[lookupID].file);
+		}
+
+		// if the frame allocated is valid, then remove it from hashTable
+		if (PageBufferManager::bufferStatTable[lookupID].valid)
+		{
+			PageId deletePageId = PageBufferManager::bufferStatTable[lookupID].pageNo;
+			PageBufferManager::hashTable->remove(PageBufferManager::bufferStatTable[lookupID].file, deletePageId);
+		}
+
 		// call the method file->readPage() to read the page from disk into the buffer pool frame
 		Page currentPage = file->readPage(pageNumber);
+		// std::cout << "read the current page into buffer pool" << std::endl;
+
 		// insert the page into BufferPool frame
 		PageBufferManager::hashTable->insert(file, pageNumber, lookupID);
+		// std::cout << "insert the page into BufferPool frame" << std::endl;
+
 		// invoke Set() on the frame to set it up properly.
 		// Set() will leave the pinCnt for the page set to 1
 		PageBufferManager::bufferStatTable[lookupID].Set(file, pageNumber);
+
 		// update the pageBufferPool
 		PageBufferManager::pageBufferPool[lookupID] = currentPage;
+
 		// Return a pointer to the frame containing the page via the page parameter.
-		page = &currentPage;
+		page = &PageBufferManager::pageBufferPool[lookupID];
+		// std::cout << "set metadata" << std::endl;
 		return;
 	}
 
@@ -96,25 +122,18 @@ void PageBufferManager::allocatePage(File* file, PageId &pageNumber, Page*& page
 {
 	//BEGINNING of your solution -- do not remove this comment
 
-	std::cout << "invoke into allocatePage()" << std::endl;
-	// create a page
-	Page allocatePage = file->allocatePage();
-	page = &allocatePage;
-	PageId allocatePageId = page->page_number();
-	pageNumber = allocatePageId;
-	std::cout << "allocating a page, number is: " << pageNumber << std::endl;
-
 	// find a frame in buffer pool
 	// call allocateBuffer to find a frame using clock algorithm
 	FrameId pageFrame;
 	PageBufferManager::allocateBuffer(pageFrame);
-	std::cout << "call allocateBuffer to find a frame using clock algorithm, frame Id is: " << pageFrame << std:: endl;
+	// std::cout << "allocated frame number: " << pageFrame << " ";
 
 	// check if the dirty bit is set
 	if (PageBufferManager::bufferStatTable[pageFrame].dirty)
 	{
 		// if the dirty bit is set, flush the file back to disk
-		PageBufferManager::flushFile(file);
+		// std::cout << "dirty bit is set, flush to disk, file name: " << PageBufferManager::bufferStatTable[pageFrame].file->filename() << std::endl;
+		PageBufferManager::flushFile(PageBufferManager::bufferStatTable[pageFrame].file);
 	}
 
 	// if the frame allocated is valid, then remove it from hashTable
@@ -124,16 +143,18 @@ void PageBufferManager::allocatePage(File* file, PageId &pageNumber, Page*& page
 		PageBufferManager::hashTable->remove(PageBufferManager::bufferStatTable[pageFrame].file, deletePageId);
 	}
 
+	PageBufferManager::pageBufferPool[pageFrame] = file->allocatePage();
+
+	// store the value
+	page = &PageBufferManager::pageBufferPool[pageFrame];
+	PageId allocatePageId = page->page_number();
+	pageNumber = allocatePageId;
+
 	// call set() to set up the buffer page status
 	PageBufferManager::bufferStatTable[pageFrame].Set(file, pageNumber);
 
 	// insert the key:(file, pageNumber) into hashtable
 	PageBufferManager::hashTable->insert(file, pageNumber, pageFrame);
-
-	// store the page acoording to the page frame
-	PageBufferManager::pageBufferPool[pageFrame] = *page;
-
-	std::cout << "return from allocatePage()" << std::endl;
 
 	//END of your solution -- do not remove this comment
 }
@@ -142,7 +163,6 @@ void PageBufferManager::unPinPage(File* file, const PageId pageNumber, const boo
 {
 	//BEGINNING of your solution -- do not remove this comment
 
-	// std::cout << "invoke into unPinPage()" << std::endl;
 	// if page is not found in hashtable, do nothing
 	FrameId lookupID;
 	try
@@ -230,8 +250,7 @@ void PageBufferManager::allocateBuffer(FrameId & frame)
 	}
 
 	// check if the reference bit is set and whether the frame is pinned
-	while (PageBufferManager::bufferStatTable[PageBufferManager::clockHand].refbit ||
-			PageBufferManager::bufferStatTable[PageBufferManager::clockHand].pinCnt > 0)
+	while (PageBufferManager::bufferStatTable[PageBufferManager::clockHand].refbit || PageBufferManager::bufferStatTable[PageBufferManager::clockHand].pinCnt > 0)
 	{
 		// if the reference bit is set, convert to false
 		if (PageBufferManager::bufferStatTable[PageBufferManager::clockHand].refbit)
@@ -309,6 +328,7 @@ void PageBufferManager::flushFile(const File* file)
 		// if the page is dirty, flush back to disk and set the dirty bit back to false
 		if (PageBufferManager::bufferStatTable[i].dirty)
 		{
+			// std::cout << "flush bakc to disk, frameID = " << i << std::endl;
 			Page flushPageID = PageBufferManager::pageBufferPool[i];
 			PageBufferManager::bufferStatTable[i].file->writePage(flushPageID);
 			PageBufferManager::bufferStatTable[i].dirty = false;

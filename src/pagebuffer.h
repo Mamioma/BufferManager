@@ -24,7 +24,7 @@ class BufferStatus {
 
 	friend class PageBufferManager;
 
- private:
+  public:
 	/**
    * Pointer to file to which corresponding frame is assigned
 	 */
@@ -176,11 +176,6 @@ class PageBufferManager
   BufHashTbl *hashTable;
 
 	/**
-   * Array of BufDesc objects to hold information corresponding to every frame allocation from 'bufPool' (the buffer pool)
-	 */
-  BufferStatus *bufferStatTable;
-
-	/**
    * Maintains Buffer pool usage statistics 
 	 */
   BufStats bufStats;
@@ -204,9 +199,14 @@ class PageBufferManager
 	 */
   Page* pageBufferPool;
 
-	/**
+  /**
+   * Array of BufDesc objects to hold information corresponding to every frame allocation from 'bufPool' (the buffer pool)
+   */
+  BufferStatus *bufferStatTable;
+
+  /**
    * Constructor of BufMgr class
-	 */
+   */
   PageBufferManager(std::uint32_t bufs);
 	
 	/**

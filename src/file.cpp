@@ -119,9 +119,13 @@ Page File::allocatePage() {
            (header.first_free_page == Page::INVALID_NUMBER));
   } else {
     new_page.set_page_number(header.num_pages);
-    if (header.first_used_page == Page::INVALID_NUMBER) {
+    // std::cout << "filename: " << filename() << " new page's current page number: " << new_page.header_.current_page_number << std::endl;
+    if (header.first_used_page == Page::INVALID_NUMBER)
+    {
       header.first_used_page = new_page.page_number();
-    } else {
+    }
+    else
+    {
       // If we have pages allocated, we need to add the new page to the tail
       // of the linked list.
       for (FileIterator iter = begin(); iter != end(); ++iter) {
@@ -168,7 +172,9 @@ Page File::readPage(const PageId page_number, const bool allow_free) const {
 
 void File::writePage(const Page& new_page) {
   PageHeader header = readPageHeader(new_page.page_number());
-  if (header.current_page_number == Page::INVALID_NUMBER) {
+  // std::cout << "filename: " << filename() << " current page number: " << header.current_page_number << std::endl;
+  if (header.current_page_number == Page::INVALID_NUMBER)
+  {
     // Page has been deleted since it was read.
     throw InvalidPageException(new_page.page_number(), filename_);
   }

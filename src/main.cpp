@@ -23,8 +23,8 @@
 using namespace badgerdb;
 
 const PageId num = 100;
-PageId pid[num], pageno1, pageno2, pageno3, i;
-RecordId rid[num], rid2, rid3;
+PageId pid[num], pageno1, pageno2, pageno3, i, pid2[num];
+RecordId rid[num], rid2, rid3, record2[num];
 Page *page, *page2, *page3;
 char tmpbuf[100];
 PageBufferManager* bufMgr;
@@ -36,6 +36,11 @@ void test3();
 void test4();
 void test5();
 void test6();
+void test7();
+void test8();
+void test9();
+void test10();
+void test11();
 void testBufMgr();
 
 int main() 
@@ -140,11 +145,16 @@ void testBufMgr()
 	//Comment tests which you do not wish to run now. Tests are dependent on their preceding tests. So, they have to be run in the following order. 
 	//Commenting  a particular test requires commenting all tests that follow it else those tests would fail.
 	test1();
-	// test2();
-	// test3();
-	// test4();
-	// test5();
-	// test6();
+	test2();
+	test3();
+	test4();
+	test5();
+	test6();
+	test7();
+	test8();
+	test9();
+	test10();
+	test11();
 
 	//Close files before deleting them
 	file1.~File();
@@ -165,17 +175,34 @@ void testBufMgr()
 	std::cout << "\n" << "Passed all tests." << "\n";
 }
 
+std::string getFilename(File* name) {
+	if (name == nullptr) {
+		return "null";
+	}
+	return name->filename();
+}
+
+void checkStatus() {
+	for (i = 0; i < num; i++) 
+	{
+		std::cout << "filename: " << getFilename(bufMgr->bufferStatTable[i].file) << std::endl;
+		std::cout << "pageNo: " << bufMgr->bufferStatTable[i].pageNo << std::endl;
+		std::cout << "frameNo: " << bufMgr->bufferStatTable[i].frameNo << std::endl;
+		std::cout << "pinCnt: " << bufMgr->bufferStatTable[i].pinCnt << std::endl;
+		std::cout << "dirty bit: " << bufMgr->bufferStatTable[i].dirty << std::endl;
+		std::cout << "ref bit: " << bufMgr->bufferStatTable[i].refbit << std::endl;
+		std::cout << "valid bit: " << bufMgr->bufferStatTable[i].valid << std::endl; 
+		std::cout << std::endl;
+	}
+}
+
 void test1()
 {
 	//Allocating pages in a file...
-	// std::cout << "first test" << std::endl; 
 	for (i = 0; i < num; i++)
 	{
-		std::cout << i << std::endl;
 		bufMgr->allocatePage(file1ptr, pid[i], page);
 		sprintf((char*)tmpbuf, "test.1 Page %d %7.1f", pid[i], (float)pid[i]);
-		// std::cout << tmpbuf << std::endl;
-		// std::cout << "size of page: " << sizeof(page) << std::endl;
 		rid[i] = page->insertRecord(tmpbuf);
 		bufMgr->unPinPage(file1ptr, pid[i], true);
 	}
@@ -198,15 +225,16 @@ void test2()
 {
 	//Writing and reading back multiple files
 	//The page number and the value should match
-
 	for (i = 0; i < num/3; i++) 
 	{
+		// here will go clockwise to remove all the page's refbit set in test1
+		// then will flush all the file1's page because all the frame's dirty bit is true
 		bufMgr->allocatePage(file2ptr, pageno2, page2);
 		sprintf((char*)tmpbuf, "test.2 Page %d %7.1f", pageno2, (float)pageno2);
 		rid2 = page2->insertRecord(tmpbuf);
 
 		int index = random() % num;
-    pageno1 = pid[index];
+    	pageno1 = pid[index];
 		bufMgr->readPage(file1ptr, pageno1, page);
 		sprintf((char*)tmpbuf, "test.1 Page %d %7.1f", pageno1, (float)pageno1);
 		if(strncmp(page->getRecord(rid[index]).c_str(), tmpbuf, strlen(tmpbuf)) != 0)
@@ -322,3 +350,154 @@ void test6()
 
 	bufMgr->flushFile(file1ptr);
 }
+
+void test7() {
+	// Allocating pages in a file...
+	for (i = 0; i < num; i++)
+	{
+		bufMgr->allocatePage(file1ptr, pid[i], page);
+		sprintf((char *)tmpbuf, "test.1 Page %d %7.1f", pid[i], (float)pid[i]);
+		rid[i] = page->insertRecord(tmpbuf);
+		bufMgr->unPinPage(file1ptr, pid[i], true);
+	}
+
+	// flush to disk 
+	bufMgr->flushFile(file1ptr);
+
+	// read it back
+	for (int i = 0; i < num; i++) {
+		bufMgr->readPage(file1ptr, pid[i], page);
+		sprintf((char *)&tmpbuf, "test.1 Page %d %7.1f", pid[i], (float)pid[i]);
+		if (strncmp(page->getRecord(rid[i]).c_str(), tmpbuf, strlen(tmpbuf)) != 0)
+		{
+			PRINT_ERROR("ERROR :: CONTENTS DID NOT MATCH");
+		}
+		bufMgr->unPinPage(file1ptr, pid[i], false);
+	}
+
+	std::cout << "pass test7" << std::endl;
+}
+
+void test8() {
+	// Allocate page than avaliable space
+	for (i = 0; i < num; i++)
+	{
+		bufMgr->allocatePage(file1ptr, pid[i], page);
+		sprintf((char *)tmpbuf, "test.1 Page %d %7.1f", pid[i], (float)pid[i]);
+		rid[i] = page->insertRecord(tmpbuf);
+		bufMgr->unPinPage(file1ptr, pid[i], true);
+	}
+	for (i = 0; i < num; i++) 
+	{
+		bufMgr->allocatePage(file2ptr, pid2[i], page2);
+		sprintf((char *)tmpbuf, "test.2 Page %d %7.1f", pid2[i], (float)pid2[i]);
+		record2[i] = page2->insertRecord(tmpbuf);
+		bufMgr->unPinPage(file2ptr, pid2[i], true);
+	}
+	// read it back
+	for (int i = 0; i < num; i++)
+	{
+		bufMgr->readPage(file1ptr, pid[i], page);
+		sprintf((char *)&tmpbuf, "test.1 Page %d %7.1f", pid[i], (float)pid[i]);
+		if (strncmp(page->getRecord(rid[i]).c_str(), tmpbuf, strlen(tmpbuf)) != 0)
+		{
+			PRINT_ERROR("ERROR :: CONTENTS DID NOT MATCH");
+		}
+		bufMgr->unPinPage(file1ptr, pid[i], false);
+	}
+	for (int i = 0; i < num; i++)
+	{
+		bufMgr->readPage(file2ptr, pid2[i], page);
+		sprintf((char *)&tmpbuf, "test.2 Page %d %7.1f", pid2[i], (float)pid2[i]);
+		if (strncmp(page->getRecord(record2[i]).c_str(), tmpbuf, strlen(tmpbuf)) != 0)
+		{
+			std::cout << "record: " << page->getRecord(record2[i]).c_str() << std::endl;
+			std::cout << tmpbuf << std::endl;
+			PRINT_ERROR("ERROR :: CONTENTS DID NOT MATCH");
+		}
+		bufMgr->unPinPage(file2ptr, pid2[i], false);
+	}
+
+	std::cout << "pass test8" << std::endl;
+}
+
+void test9() 
+{
+	// delete the page from file
+	for (int i = 0; i < num; i++) {
+		bufMgr->disposePage(file2ptr, pid2[i]);
+	}
+	try
+	{
+		bufMgr->readPage(file2ptr, pid[0], page2);
+		PRINT_ERROR("ERROR :: Read deleted page. Exception should have been thrown before execution reaches this point.");
+	}
+	catch (const InvalidPageException e)
+	{
+	}
+
+	std::cout << "pass test9" << std::endl;
+}
+
+void test10() {
+	// allocate page and flush it
+	for (i = 0; i < 70; i++)
+	{
+		bufMgr->allocatePage(file1ptr, pid[i], page);
+		sprintf((char *)tmpbuf, "test.1 Page %d %7.1f", pid[i], (float)pid[i]);
+		rid[i] = page->insertRecord(tmpbuf);
+		bufMgr->unPinPage(file1ptr, pid[i], true);
+	}
+	bufMgr->flushFile(file1ptr);
+
+	// allocate another page
+	for (i = 0; i < 20; i++)
+	{
+		bufMgr->allocatePage(file2ptr, pid2[i], page2);
+		sprintf((char *)tmpbuf, "test.2 Page %d %7.1f", pid2[i], (float)pid2[i]);
+		record2[i] = page2->insertRecord(tmpbuf);
+		bufMgr->unPinPage(file2ptr, pid2[i], true);
+	}
+	for (i = 20; i < 40; i++)
+	{
+		bufMgr->allocatePage(file2ptr, pid2[i], page2);
+		bufMgr->unPinPage(file2ptr, pid2[i], false);
+	}
+
+	// read flushed page
+	for (int i = 0; i < 70; i++)
+	{
+		bufMgr->readPage(file1ptr, pid[i], page);
+		sprintf((char *)&tmpbuf, "test.1 Page %d %7.1f", pid[i], (float)pid[i]);
+		if (strncmp(page->getRecord(rid[i]).c_str(), tmpbuf, strlen(tmpbuf)) != 0)
+		{
+			PRINT_ERROR("ERROR :: CONTENTS DID NOT MATCH");
+		}
+		bufMgr->unPinPage(file1ptr, pid[i], false);
+	}
+
+	std::cout << "pass test10" << std::endl;
+	bufMgr->flushFile(file1ptr);
+	bufMgr->flushFile(file2ptr);
+}
+
+void test11() {
+	// unpin pinned page and unpin unpinned page
+	try
+	{
+		for (i = 0; i < 70; i++)
+		{
+			bufMgr->allocatePage(file1ptr, pid[i], page);
+			sprintf((char *)tmpbuf, "test.1 Page %d %7.1f", pid[i], (float)pid[i]);
+			rid[i] = page->insertRecord(tmpbuf);
+			bufMgr->unPinPage(file1ptr, pid[i], true);
+			bufMgr->unPinPage(file1ptr, pid[i], false);
+		}
+	}
+	catch (const PageNotPinnedException e)
+	{
+	}
+	std::cout << "pass test11" << std::endl;
+	bufMgr->flushFile(file1ptr);
+}
+
